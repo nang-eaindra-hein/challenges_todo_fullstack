@@ -1,0 +1,34 @@
+services:
+  # 1. Database Service
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: todo_challenges #database name
+    restart: always
+    environment: #must match database
+      POSTGRES_USER: todo_user
+      POSTGRES_PASSWORD: todo_password_123
+      POSTGRES_DB: todo_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. Litestar Backend Service
+  backend_app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo_container #docker container name
+    restart: always
+    ports:
+      - "8000:8000" #outside port must different if other project use 8000 ,change to 8001:8000
+    volumes:
+      - ./backend:/app
+    environment:
+      # Use the database service name 'postgres_db' as the hostname
+      DATABASE_URL: "postgresql+asyncpg://todo_user:todo_password_123@postgres_db:5432/todo_database" #must match env
+    depends_on:
+      - postgres_db
+
+volumes:
+  postgres_data:
