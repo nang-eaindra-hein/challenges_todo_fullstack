@@ -1,49 +1,80 @@
 <script lang="ts">
 
+    let todos = $state([]);
+    let newTodo = $state("");
+    let activeTodos = $derived(todos.filter(todo => !todo.completed).length);
+    let filter = $state("all");
+    let filteredTodos = $derived(
+        todos.filter(todo => {
+            if (filter === "active") return !todo.completed;
+            if (filter === "completed") return todo.completed;
+            return true;
+        })
+    );
+
+    function addTodo(){
+
+        if (!newTodo.trim()) return;
+
+        todos.push({
+            text: newTodo,
+            completed: false
+        });
+
+        newTodo = "";
+    }
+
+    function clearCompleted() {
+        todos = todos.filter(todo => !todo.completed);
+    }
 
 </script>
+
 <div class="relative h-screen">
-    <div class="h-2/5 bg-[url('/images/bg-desktop-light.jpg')] bg-no-repeat bg-cover"></div>
+    <div class="h-[300px] bg-[url('/images/bg-desktop-light.jpg')] bg-no-repeat bg-cover"></div>
 
-    <div class="h-3/5 bg-white"></div>
+    <div class="flex-1 bg-gray-50"></div>
 
-    <div class="absolute w-[90%] max-w-lg top-1/5 left-1/2 transform -translate-x-1/2 flex flex-col space-y-4 items-center justify-center">
+    <div class="absolute w-[90%] max-w-[540px] top-[10%] left-1/2 -translate-x-1/2 flex flex-col space-y-4 items-center">
         <div class="w-full flex items-center justify-between">
-            <h1 class="text-4xl font-bold text-white">TODO</h1>
+            <h1 class="text-4xl font-bold text-gray-50">TODO</h1>
             <button>
                 <img src="/images/icon-moon.svg" alt="Dark Mode">
             </button>
         </div>
 
-        <input type="text" placeholder="Create a new todo..." class="w-full p-4 mt-4 text-lg bg-white rounded-md">
+        <div class="w-full flex gap-4 items-center bg-white rounded-md p-4">
 
-        <div>
-            <ul class="w-48 select-none text-sm font-medium text-heading bg-neutral-primary-soft border border-default rounded-base">
-                <li class="w-full border-b border-default rounded-t-lg">
-                    <div class="flex items-center ps-3">
-                        <input id="vue-checkbox" type="checkbox" value="" class="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft">
-                        <label for="vue-checkbox" class="w-full py-3 ms-2 text-sm font-medium text-heading">Vue JS</label>
-                    </div>
-                </li>
-                <li class="w-full border-b border-default rounded-t-lg">
-                    <div class="flex items-center ps-3">
-                        <input id="react-checkbox" type="checkbox" value="" class="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft">
-                        <label for="react-checkbox" class="w-full py-3 ms-2 text-sm font-medium text-heading">React</label>
-                    </div>
-                </li>
-                <li class="w-full border-b border-default rounded-t-lg">
-                    <div class="flex items-center ps-3">
-                        <input id="angular-checkbox" type="checkbox" value="" class="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft">
-                        <label for="angular-checkbox" class="w-full py-3 ms-2 text-sm font-medium text-heading">Angular</label>
-                    </div>
-                </li>
-                <li class="w-full rounded-t-lg">
-                    <div class="flex items-center ps-3">
-                        <input id="laravel-checkbox" type="checkbox" value="" class="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft">
-                        <label for="laravel-checkbox" class="w-full py-3 ms-2 text-sm font-medium text-heading">Laravel</label>
-                    </div>
-                </li>
-            </ul>
+            <input class="h-5 w-5" type="checkbox">
+
+            <input class="flex-1 border-none outline-none font-[josefin-sans]" type="text" placeholder="Create a new todo..." bind:value={newTodo}  onkeydown={(event) => {if (event.key === 'Enter') addTodo();}}>
+
         </div>
+
+        <div class="w-full bg-white rounded-md shadow-md overflow-hidden">
+            {#each filteredTodos as todo}
+                <div class="w-full flex gap-4 items-center bg-white p-4 border-b font-[josefin-sans]">
+                    <input class="w-5 h-5" type="checkbox" bind:checked={todo.completed}>
+                    <p class="flex-1 font-[josefin-sans]" class:text-gray-400={todo.completed} class:line-through={todo.completed}>{todo.text}</p>
+                </div>
+            {/each}
+
+            <div class="w-full bg-white p-4 flex justify-between font-[josefin-sans] text-gray-400 text-sm">
+                <span>{activeTodos} items left</span>
+
+                <div class="flex gap-4 hover:text-navy-500 transition-colors">
+                    <button onclick={() => filter = "all"}>All</button>
+                    <button onclick={() => filter = "active"}>Active</button>
+                    <button onclick={() => filter = "completed"}>Completed</button>
+                </div>
+
+                <button onclick={clearCompleted}>Clear Completed</button>
+            </div>
+        </div>
+
+        <p class="text-center text-gray-400 text-sm font-[josefin-sans]">
+            Drag and drop to reorder list
+        </p>
+
     </div>
 </div>
