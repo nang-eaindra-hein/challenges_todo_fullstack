@@ -1,12 +1,18 @@
 from pydantic import BaseModel, ConfigDict
+from enum import Enum
 
 
 # full data of todo
 class TodoData(BaseModel):
     id: int
     title: str
-    status: bool
+    status: TodoStatusEnum
     model_config = ConfigDict(from_attributes=True)
+
+
+class TodoLists(BaseModel):
+    items: list[TodoData]
+    count: int
 
 
 # create todo
@@ -16,11 +22,15 @@ class TodoCreate(BaseModel):
 
 # update status
 class UpdateStatus(BaseModel):
-    id: int
-    status: bool
+    status: TodoStatusEnum
 
 
 # update title
 class UpdateTitle(BaseModel):
-    id: int
     title: str
+
+
+# status eum
+class TodoStatusEnum(str, Enum):
+    ACTIVE = "Active"  # false
+    COMPLETED = "Completed"  # true

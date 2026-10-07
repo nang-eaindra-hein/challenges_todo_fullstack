@@ -25,8 +25,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      # Use the database service name 'postgres_db' as the hostname
-      DATABASE_URL: "postgresql+asyncpg://todo_user:todo_password_123@postgres_db:5432/todo_database" #must match env
+      LITESTAR_APP: app.main:app
     depends_on:
       - postgres_db
 

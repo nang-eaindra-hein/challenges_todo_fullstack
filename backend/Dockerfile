@@ -11,7 +11,6 @@ RUN uv sync --frozen
 
 COPY . .
 
-ENV LITESTAR_APP="app:app" 
-EXPOSE 8000 
 
-CMD ["uv", "run", "litestar", "run", "--host", "0.0.0.0","--reload", "--port", "8000"] 
+ENV PATH="/app/.venv/bin:$PATH"
+CMD ["litestar", "--app", "app.main:app", "run", "--reload", "--host", "0.0.0.0", "--port", "8000"]
