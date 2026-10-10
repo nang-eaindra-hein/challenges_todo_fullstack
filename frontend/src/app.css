@@ -1,25 +1,38 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+    button {
+        cursor: pointer;
+    }
+}
 
 body {
-    font-family: 'Josefin Sans', sans-serif;
+    font-family: var(--font-josefin);
     font-size: 18px;
 }
 
 @theme {
-    --color-blue-500: hsl(220 98% 61%);
+    --font-josefin: 'Josefin Sans', sans-serif;
 
-    --color-gray-50: hsl(0 0% 98%);
-    --color-gray-300: hsl(233 11% 84%);
-    --color-gray-600: hsl(236 9% 61%);
+    --color-primary-blue-500: hsl(220 98% 61%);
 
-    --color-purple-300: hsl(234 39% 85%);
-    --color-navy-850: hsl(235 19% 35%);
+    --color-light-gray-50: hsl(0 0% 98%);
+    --color-light-gray-300: hsl(233 11% 84%);
+    --color-light-gray-600: hsl(236 9% 61%);
 
-    --color-navy-950: hsl(235 21% 11%);
-    --color-navy-900: hsl(235 24% 19%);
-    --color-purple-100: hsl(236 33% 92%);
-    --color-purple-600: hsl(235 16% 43%);
-    --color-purple-700: hsl(233 14% 35%);
-    --color-purple-800: hsl(237 14% 26%);
+    --color-light-purple-300: hsl(234 39% 85%);
+    --color-light-navy-850: hsl(235 19% 35%);
+
+    --color-dark-navy-950: hsl(235 21% 11%);
+    --color-dark-navy-900: hsl(235 24% 19%);
+    --color-dark-purple-100: hsl(236 33% 92%);
+    --color-dark-purple-600: hsl(235 16% 43%);
+    --color-dark-purple-700: hsl(233 14% 35%);
+    --color-dark-purple-800: hsl(237 14% 26%);
+
+    --color-check-start: hsl(192 100% 67%);
+    --color-check-end: hsl(280 87% 65%);
 }
