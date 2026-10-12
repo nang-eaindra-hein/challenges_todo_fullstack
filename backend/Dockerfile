@@ -3,14 +3,18 @@ FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-WORKDIR /app #start from run mk file name
+WORKDIR /app 
+    
+
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --frozen
+RUN uv sync --python 3.12 --no-dev
 
 COPY . .
 
-
 ENV PATH="/app/.venv/bin:$PATH"
+
 CMD ["litestar", "--app", "app.main:app", "run", "--reload", "--host", "0.0.0.0", "--port", "8000"]

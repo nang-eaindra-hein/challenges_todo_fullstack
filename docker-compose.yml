@@ -18,12 +18,13 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: todo_container #docker container name
+    container_name: todo_challenge_container #docker container name
     restart: always
     ports:
       - "8000:8000" #outside port must different if other project use 8000 ,change to 8001:8000
     volumes:
       - ./backend:/app
+      - /app/.venv
     environment:
       LITESTAR_APP: app.main:app
     depends_on:
