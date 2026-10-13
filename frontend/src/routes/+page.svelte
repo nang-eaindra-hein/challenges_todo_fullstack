@@ -1,44 +1,54 @@
 <script lang="ts">
+    import {onMount} from "svelte";
+    import { getTodos, createTodo, updateStatus, deleteTodoById, type Todo } from "../lib/api/todos";;
     import "../app.css";
 
     const filters = ["all", "active", "completed"] as const;
-    type Todo = { text: string; completed: boolean };
-
+    
     let isDarkMode = $state(false);
     let todos = $state<Todo[]>([]);
     let newTodo = $state("");
-    let activeTodos = $derived(todos.filter(todo => !todo.completed).length);
+    let activeTodos = $derived(todos.filter(todo => todo.status === "Active").length);
     let filter = $state<typeof filters[number]>("all");
     let filteredTodos = $derived(
         todos.filter(todo => {
-            if (filter === "active") return !todo.completed;
-            if (filter === "completed") return todo.completed;
+            if (filter === "active") return todo.status === "Active";
+            if (filter === "completed") return todo.status === "Completed";
             return true;
         })
     );
-
+    
     function toggleDarkMode() {
         isDarkMode = !isDarkMode;
     }
 
-    function addTodo(){
+    onMount(async () => {
+        const data = await getTodos();
+        todos = data.items;
+    });
 
-        if (!newTodo.trim()) return;
+    async function addTodo() {
+        const title = newTodo.trim();
+        if (!title) return;
 
-        todos.push({
-            text: newTodo,
-            completed: false
-        });
-
+        const created = await createTodo(title);
+        todos.push(created);
         newTodo = "";
     }
 
-    function deleteTodo(todo: Todo) {
-        todos = todos.filter(t => t !== todo);
+    async function toggleTodo(todo: Todo) {
+        const newStatus = todo.status === "Active" ? "Completed" : "Active";
+        const updated = await updateStatus(todo.id, newStatus);
+        todo.status = updated.status;
+    }
+
+    async function deleteTodo(todo: Todo) {
+        await deleteTodoById(todo.id);
+        todos = todos.filter(t => t.id !== todo.id);
     }
 
     function clearCompleted() {
-        todos = todos.filter(todo => !todo.completed);
+         // TODO: connect when the backend adds "delete completed"
     }
 
 </script>
@@ -80,22 +90,22 @@
         </div>
 
         <div class="w-full bg-white dark:bg-dark-navy-900 rounded-md shadow-md overflow-hidden">
-            {#each filteredTodos as todo}
+            {#each filteredTodos as todo(todo.id)}
                 <div class="group w-full flex gap-3 md:gap-4 items-center bg-white dark:bg-dark-navy-900 p-4 border-b border-dark-purple-100 dark:border-dark-purple-800">
                     <button
                         aria-label="Toggle completion"
-                        class={["w-5 h-5 shrink-0 rounded-full p-px flex items-center justify-center", todo.completed ? "bg-linear-to-br from-check-start to-check-end" : "bg-light-gray-300 dark:bg-dark-purple-800 hover:bg-linear-to-br hover:from-check-start hover:to-check-end"]}
-                        onclick={() => todo.completed = !todo.completed}
+                        class={["w-5 h-5 shrink-0 rounded-full p-px flex items-center justify-center", todo.status === "Completed" ? "bg-linear-to-br from-check-start to-check-end" : "bg-light-gray-300 dark:bg-dark-purple-800 hover:bg-linear-to-br hover:from-check-start hover:to-check-end"]}
+                        onclick={() => toggleTodo(todo)}
                     >
-                        {#if todo.completed}
+                        {#if todo.status === "Completed"}
                             <img src="/images/icon-check.svg" alt="Completed">
                         {:else}
                             <span class=" block w-full h-full rounded-full bg-white dark:bg-dark-navy-900"></span>
                         {/if}
                     </button>
 
-                    <p class={["flex-1", todo.completed ? "line-through text-light-gray-300 dark:text-dark-purple-700" : "text-light-navy-850 dark:text-light-purple-300"]}>
-                        {todo.text}
+                    <p class={["flex-1", todo.status === "Completed" ? "line-through text-light-gray-300 dark:text-dark-purple-700" : "text-light-navy-850 dark:text-light-purple-300"]}>
+                        {todo.title}
                     </p>
 
                     <button
