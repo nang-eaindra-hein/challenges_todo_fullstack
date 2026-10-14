@@ -11,6 +11,7 @@ export type TodoList = {
   count: number;
 }
 
+//get todos
 export async function getTodos(): Promise<TodoList> {
     const res = await fetch('/todos');
     if (!res.ok) {
@@ -19,6 +20,7 @@ export async function getTodos(): Promise<TodoList> {
     return res.json();
 }
 
+//create todo
 export async function createTodo(title: string): Promise<Todo> {
   const res = await fetch("/todo", {
     method: "POST",
@@ -29,6 +31,25 @@ export async function createTodo(title: string): Promise<Todo> {
   return res.json();
 }
 
+//update todo title
+export async function updateTodoTitle(
+    id: number,
+    title: string
+): Promise<Todo> {
+    const res = await fetch(`/todo/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+    });
+
+    if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+    }
+
+    return res.json();
+}
+
+//update todo status
 export async function updateStatus(id: number, status: TodoStatus): Promise<Todo> {
   const res = await fetch(`/todo-status/${id}`, {
     method: "PUT",
@@ -39,6 +60,7 @@ export async function updateStatus(id: number, status: TodoStatus): Promise<Todo
   return res.json();
 }
 
+//delete todo by id
 export async function deleteTodoById(id: number): Promise<void> {
   const res = await fetch(`/${id}`, {
     method: "DELETE",

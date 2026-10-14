@@ -1,13 +1,16 @@
 <script lang="ts">
     import {onMount} from "svelte";
-    import { getTodos, createTodo, updateStatus, deleteTodoById, type Todo } from "../lib/api/todos";;
+    import { getTodos, createTodo, updateStatus, deleteTodoById, updateTodoTitle, type Todo } from "../lib/api/todos";;
     import "../app.css";
+    import PencilIcon from '~icons/lucide/pencil';
 
     const filters = ["all", "active", "completed"] as const;
     
     let isDarkMode = $state(false);
     let todos = $state<Todo[]>([]);
     let newTodo = $state("");
+    let editingTodoId = $state<number | null>(null);
+    let editedTitle = $state("");
     let activeTodos = $derived(todos.filter(todo => todo.status === "Active").length);
     let filter = $state<typeof filters[number]>("all");
     let filteredTodos = $derived(
@@ -34,6 +37,30 @@
         const created = await createTodo(title);
         todos.push(created);
         newTodo = "";
+    }
+
+
+    async function startEditing(todo: Todo) {
+        if (editingTodoId === todo.id) {
+            // Cancel editing
+            editingTodoId = null;
+            editedTitle = "";
+        } else {
+            // Start editing
+            editingTodoId = todo.id;
+            editedTitle = todo.title;
+        }
+    }
+
+    async function saveTodo(todo: Todo) {
+        const title = editedTitle.trim();
+
+        if (!title) return;
+
+        const updated = await updateTodoTitle(todo.id, title);
+        todos = todos.map((t) => t.id === todo.id ? updated : t);
+
+        editingTodoId = null;
     }
 
     async function toggleTodo(todo: Todo) {
@@ -104,9 +131,31 @@
                         {/if}
                     </button>
 
-                    <p class={["flex-1", todo.status === "Completed" ? "line-through text-light-gray-300 dark:text-dark-purple-700" : "text-light-navy-850 dark:text-light-purple-300"]}>
-                        {todo.title}
-                    </p>
+                   {#if editingTodoId === todo.id}
+                        <input
+                            type="text"
+                            class="flex-1 min-w-0 bg-transparent outline outline-light-navy-850 dark:outline-light-purple-300 p-2 rounded caret-primary-blue-500 text-light-navy-850 dark:text-light-purple-300"
+                            bind:value={editedTitle}
+                            onkeydown={(event) => {
+                                if (event.key === "Enter") {
+                                    saveTodo(todo);
+                                }
+                                
+                            }}
+                            onblur={() => {
+                                editingTodoId = null;
+                                editedTitle = "";
+                            }}
+                        />
+                    {:else}
+                        <p class={["flex-1", todo.status === "Completed" ? "line-through text-light-gray-300 dark:text-dark-purple-700" : "text-light-navy-850 dark:text-light-purple-300"]}>
+                            {todo.title}
+                        </p>
+                    {/if}
+
+                    <button aria-label="Edit todo" onclick={() => startEditing(todo)} class={["text-md transition-colors", editingTodoId === todo.id ? "text-primary-blue-500": "text-light-gray-600 dark:text-dark-purple-600 hover:text-primary-blue-500"]}>
+                        <PencilIcon />
+                    </button>
 
                     <button
                         aria-label="Delete todo"
