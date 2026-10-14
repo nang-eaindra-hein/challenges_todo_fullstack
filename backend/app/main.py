@@ -6,8 +6,7 @@ from .methods import (
     provide_todo_repo,
     get_todos,
     create_todo,
-    update_status,
-    update_title,
+    update_todo,
     delete_todo,
     delete_todos,
 )
@@ -16,8 +15,7 @@ app = Litestar(
     route_handlers=[
         get_todos,
         create_todo,
-        update_status,
-        update_title,
+        update_todo,
         delete_todo,
         delete_todos,
     ],

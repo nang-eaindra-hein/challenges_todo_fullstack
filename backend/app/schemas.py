@@ -26,11 +26,7 @@ class TodoCreate(BaseModel):
     title: str
 
 
-# update status
-class UpdateStatus(BaseModel):
-    status: TodoStatusEnum
-
-
-# update title
-class UpdateTitle(BaseModel):
-    title: str
+# update todo
+class UpdateTodo(BaseModel):
+    title: str | None = None
+    status: TodoStatusEnum | None = None

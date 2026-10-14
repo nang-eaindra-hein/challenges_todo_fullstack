@@ -1,15 +1,14 @@
 from contextlib import asynccontextmanager
 
-from litestar import Litestar, post, get, put, delete
+from litestar import Litestar, post, get, patch, delete
 
-from sqlalchemy import select, func, delete as sqlalchemy_delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import Todos
 from .database import Base, engine, SessionLocal
 from .schemas import (
     TodoData,
-    UpdateStatus,
-    UpdateTitle,
+    UpdateTodo,
     TodoCreate,
     TodoLists,
     TodoStatusEnum,
@@ -78,15 +77,17 @@ async def create_todo(
     return TodoData.model_validate(todo)
 
 
-# update status
-@put("/todo-status/{todo_id:int}")
-async def update_status(
-    todo_id: int, todo_repo: TodoRepository, data: UpdateStatus
+# update todo
+@patch("/todo/{todo_id:int}")
+async def update_todo(
+    todo_id: int, todo_repo: TodoRepository, data: UpdateTodo | None
 ) -> TodoData:
 
     todo = await todo_repo.get(todo_id)
-
-    todo.status = data.status
+    if data.title is not None:
+        todo.title = data.title
+    if data.status is not None:
+        todo.status = data.status
 
     todo = await todo_repo.update(todo)
     await todo_repo.session.commit()
@@ -94,23 +95,7 @@ async def update_status(
     return TodoData.model_validate(todo)
 
 
-# update title
-@put("/todo-title/{todo_id:int}")
-async def update_title(
-    todo_id: int, todo_repo: TodoRepository, data: UpdateTitle
-) -> TodoData:
-
-    todo = await todo_repo.get(todo_id)
-
-    todo.title = data.title
-
-    todo = await todo_repo.update(todo)
-    await todo_repo.session.commit()
-
-    return TodoData.model_validate(todo)
-
-
-# delete bt id
+# delete by id
 @delete("/{todo_id:int}")
 async def delete_todo(todo_id: int, todo_repo: TodoRepository) -> None:
 
@@ -120,9 +105,22 @@ async def delete_todo(todo_id: int, todo_repo: TodoRepository) -> None:
 
 # delete all lists
 @delete("/delete-todos")
-async def delete_todos(todo_repo: TodoRepository) -> None:
+async def delete_todos(
+    todo_repo: TodoRepository,
+    type: str | None,
+) -> None:
 
-    todos = await todo_repo.list()
+    if type == TodoStatusEnum.ACTIVE:
+        todos = await todo_repo.list(
+            statement=select(Todos).where(Todos.status == TodoStatusEnum.ACTIVE)
+        )  # active lists(false)
+    elif type == TodoStatusEnum.COMPLETED:
+        todos = await todo_repo.list(
+            statement=select(Todos).where(Todos.status == TodoStatusEnum.COMPLETED)
+        )  # active lists(true)
+    else:
+        todos = await todo_repo.list()
 
-    await todo_repo.delete_many([todo.id for todo in todos])
-    await todo_repo.session.commit()
+    if todos:
+        await todo_repo.delete_many([todo.id for todo in todos])
+        await todo_repo.session.commit()
