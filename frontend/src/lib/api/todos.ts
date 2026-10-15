@@ -51,8 +51,8 @@ export async function updateTodoTitle(
 
 //update todo status
 export async function updateStatus(id: number, status: TodoStatus): Promise<Todo> {
-  const res = await fetch(`/todo-status/${id}`, {
-    method: "PUT",
+  const res = await fetch(`/todo/${id}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
   });
@@ -63,6 +63,14 @@ export async function updateStatus(id: number, status: TodoStatus): Promise<Todo
 //delete todo by id
 export async function deleteTodoById(id: number): Promise<void> {
   const res = await fetch(`/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+}
+
+//delete all
+export async function deleteTodos(type: "Active"|"Completed"|"All"): Promise<void> {
+  const res = await fetch(`/delete-todos?type=${type}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);

@@ -1,6 +1,6 @@
 <script lang="ts">
     import {onMount} from "svelte";
-    import { getTodos, createTodo, updateStatus, deleteTodoById, updateTodoTitle, type Todo } from "../lib/api/todos";;
+    import { getTodos, createTodo, updateStatus, deleteTodoById, updateTodoTitle, deleteTodos, type Todo } from "../lib/api/todos";;
     import "../app.css";
     import PencilIcon from '~icons/lucide/pencil';
 
@@ -11,7 +11,7 @@
     let newTodo = $state("");
     let editingTodoId = $state<number | null>(null);
     let editedTitle = $state("");
-    let activeTodos = $derived(todos.filter(todo => todo.status === "Active").length);
+    
     let filter = $state<typeof filters[number]>("all");
     let filteredTodos = $derived(
         todos.filter(todo => {
@@ -20,8 +20,9 @@
             return true;
         })
     );
+    let itemCounts =$derived(filteredTodos.length);
     
-    function toggleDarkMode() {
+    async function toggleDarkMode() {
         isDarkMode = !isDarkMode;
     }
 
@@ -38,7 +39,6 @@
         todos.push(created);
         newTodo = "";
     }
-
 
     async function startEditing(todo: Todo) {
         if (editingTodoId === todo.id) {
@@ -69,13 +69,21 @@
         todo.status = updated.status;
     }
 
-    async function deleteTodo(todo: Todo) {
+    async function deleteOnetodo(todo: Todo) {
         await deleteTodoById(todo.id);
         todos = todos.filter(t => t.id !== todo.id);
     }
 
-    function clearCompleted() {
-         // TODO: connect when the backend adds "delete completed"
+    async function deletefilterTodos() {
+         const type = filter === "active" ? "Active" : filter === "completed" ? "Completed" : "All";
+
+        await deleteTodos(type);
+
+        todos = todos.filter(todo => {
+            if (filter === "active") return todo.status !== "Active";
+            if (filter === "completed") return todo.status !== "Completed";
+            return false;
+        });
     }
 
 </script>
@@ -160,7 +168,7 @@
                     <button
                         aria-label="Delete todo"
                         class="md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100 transition-opacity"
-                        onclick={() => deleteTodo(todo)}
+                        onclick={() => deleteOnetodo(todo)}
                     >
                         <img src="/images/icon-cross.svg" alt="">
                     </button>
@@ -168,13 +176,13 @@
             {/each}
 
             <div class="p-4 flex justify-between text-xs md:text-sm text-light-gray-600 dark:text-dark-purple-600">
-                <span>{activeTodos} items left</span>
+                <span>{itemCounts} {filter} items</span>
 
                 <div class="hidden md:flex gap-4">
                     {@render filterButtons()}
                 </div>
 
-                <button onclick={clearCompleted} class="hover:text-light-navy-850 dark:hover:text-dark-purple-100 transition-colors">Clear Completed</button>
+                <button onclick={deletefilterTodos} class="hover:text-light-navy-850 dark:hover:text-dark-purple-100 transition-colors">Clear {filter}</button>
             </div>
         </div>
 

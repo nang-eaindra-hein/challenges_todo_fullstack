@@ -26,10 +26,10 @@ export default defineConfig({
 	// NEW: forward these backend paths to Litestar
 	server: {
 		proxy: {
-			// matches by prefix: /todos, /todo, /todo-status/1, /todo-title/1
+			'/todos': 'http://localhost:8000',
 			'/todo': 'http://localhost:8000',
+			'/todo-status': 'http://localhost:8000',
 			'/delete-todos': 'http://localhost:8000',
-			// starts with ^ so Vite reads it as a pattern: matches /5, /12... (delete one)
 			'^/\\d+$': 'http://localhost:8000'
 		}
 	}
