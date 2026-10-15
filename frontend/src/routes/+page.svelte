@@ -1,13 +1,101 @@
 <script lang="ts">
-    import {onMount} from "svelte";
+    // import {onMount} from "svelte";
     import { getTodos, createTodo, updateStatus, deleteTodoById, updateTodoTitle, deleteTodos, type Todo } from "../lib/api/todos";;
     import "../app.css";
     import PencilIcon from '~icons/lucide/pencil';
+    import { createQuery } from "@tanstack/svelte-query";
+    import { createMutation, useQueryClient } from "@tanstack/svelte-query";
 
     const filters = ["all", "active", "completed"] as const;
+
+    const todosQuery = createQuery(() => ({
+        queryKey: ["todos"],
+        queryFn: getTodos
+    }));
+
+    const queryClient = useQueryClient();
+
+    const addTodoMutation = createMutation(() => ({
+        mutationFn: createTodo,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["todos"] });
+        }
+    }));
+
+    const updateStatusMutation = createMutation(() => ({
+        mutationFn: ({ id, status }: { id: number; status: Todo["status"] }) =>
+            updateStatus(id, status),
+        onSuccess: (updatedTodo) => {
+            queryClient.setQueryData(["todos"], (oldData) => {
+                if (!oldData) return oldData;
+
+                return {
+                ...oldData,
+                items: oldData.items.map((todo) =>
+                    todo.id === updatedTodo.id ? updatedTodo : todo
+                )
+                };
+            });
+        }
+    }));
+
+    const editTodoMutation = createMutation(() => ({
+    mutationFn: ({ id, title }: { id: number; title: string }) =>
+        updateTodoTitle(id, title),
+    onSuccess: (updatedTodo) => {
+        queryClient.setQueryData(["todos"], (oldData) => {
+        if (!oldData) return oldData;
+
+        return {
+            ...oldData,
+            items: oldData.items.map((todo) =>
+            todo.id === updatedTodo.id ? updatedTodo : todo
+            )
+        };
+        });
+    }
+    }));
     
+    const deleteTodoMutation = createMutation(() => ({
+    mutationFn: deleteTodoById,
+    onSuccess: (_, deletedId) => {
+        queryClient.setQueryData(["todos"], (oldData) => {
+        if (!oldData) return oldData;
+
+        return {
+            ...oldData,
+            items: oldData.items.filter((todo) => todo.id !== deletedId),
+            count: oldData.count - 1
+        };
+        });
+    }
+    }));
+
+    
+    const deleteTodosMutation = createMutation(() => ({
+    mutationFn: deleteTodos,
+    onSuccess: (_, type) => {
+        queryClient.setQueryData(["todos"], (oldData) => {
+        if (!oldData) return oldData;
+
+        const remainingTodos = oldData.items.filter((todo) => {
+            if (type === "Active") return todo.status !== "Active";
+            if (type === "Completed") return todo.status !== "Completed";
+            return false;
+        });
+
+        return {
+            ...oldData,
+            items: remainingTodos,
+            count: remainingTodos.length
+        };
+        });
+    }
+    }));
+
+        
     let isDarkMode = $state(false);
-    let todos = $state<Todo[]>([]);
+    let todos = $derived(todosQuery.data?.items ?? []);
     let newTodo = $state("");
     let editingTodoId = $state<number | null>(null);
     let editedTitle = $state("");
@@ -26,21 +114,20 @@
         isDarkMode = !isDarkMode;
     }
 
-    onMount(async () => {
-        const data = await getTodos();
-        todos = data.items;
-    });
+    // onMount(async () => {
+    //     const data = await getTodos();
+    //     todos = data.items;
+    // });
 
     async function addTodo() {
         const title = newTodo.trim();
         if (!title) return;
 
-        const created = await createTodo(title);
-        todos.push(created);
+        await addTodoMutation.mutateAsync(title);
         newTodo = "";
     }
 
-    async function startEditing(todo: Todo) {
+    function startEditing(todo: Todo) {
         if (editingTodoId === todo.id) {
             // Cancel editing
             editingTodoId = null;
@@ -57,33 +144,37 @@
 
         if (!title) return;
 
-        const updated = await updateTodoTitle(todo.id, title);
-        todos = todos.map((t) => t.id === todo.id ? updated : t);
+        await editTodoMutation.mutateAsync({
+            id: todo.id,
+            title
+        });
 
         editingTodoId = null;
     }
 
     async function toggleTodo(todo: Todo) {
         const newStatus = todo.status === "Active" ? "Completed" : "Active";
-        const updated = await updateStatus(todo.id, newStatus);
-        todo.status = updated.status;
-    }
 
-    async function deleteOnetodo(todo: Todo) {
-        await deleteTodoById(todo.id);
-        todos = todos.filter(t => t.id !== todo.id);
-    }
-
-    async function deletefilterTodos() {
-         const type = filter === "active" ? "Active" : filter === "completed" ? "Completed" : "All";
-
-        await deleteTodos(type);
-
-        todos = todos.filter(todo => {
-            if (filter === "active") return todo.status !== "Active";
-            if (filter === "completed") return todo.status !== "Completed";
-            return false;
+        await updateStatusMutation.mutateAsync({
+            id: todo.id,
+            status: newStatus
         });
+    }
+    
+    async function deleteOnetodo(todo: Todo) {
+        await deleteTodoMutation.mutateAsync(todo.id);
+    }
+
+    
+    async function deletefilterTodos() {
+    const type =
+        filter === "active"
+        ? "Active"
+        : filter === "completed"
+            ? "Completed"
+            : "All";
+
+    await deleteTodosMutation.mutateAsync(type);
     }
 
 </script>
