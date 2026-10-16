@@ -282,7 +282,7 @@
         </div>
     </main>
 
-    <p class="py-10 text-center text-sm text-light-gray-600 dark:text-dark-purple-600">
+    <!-- <p class="py-10 text-center text-sm text-light-gray-600 dark:text-dark-purple-600">
             Drag and drop to reorder list
-    </p>
+    </p> -->
 </div>

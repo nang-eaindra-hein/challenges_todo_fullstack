@@ -17,7 +17,7 @@ export async function getTodos(): Promise<TodoList> {
     if (!res.ok) {
       throw new Error(`Request failed: ${res.status}`);
     }
-    return res.json();
+    return res.json(); issueinstance
 }
 
 //create todo
