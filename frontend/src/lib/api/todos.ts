@@ -1,15 +1,4 @@
-export type TodoStatus = "Active" | "Completed";
-
-export type Todo = {
-    id: number;
-    title: string;
-    status: TodoStatus;
-};
-
-export type TodoList = {
-  items: Todo[];
-  count: number;
-}
+import type { Todo, TodoList, TodoStatusEnum } from "#lib/types.ts";
 
 //get todos
 export async function getTodos(): Promise<TodoList> {
@@ -17,7 +6,8 @@ export async function getTodos(): Promise<TodoList> {
     if (!res.ok) {
       throw new Error(`Request failed: ${res.status}`);
     }
-    return res.json(); issueinstance
+    return res.json(); 
+
 }
 
 //create todo
@@ -50,7 +40,7 @@ export async function updateTodoTitle(
 }
 
 //update todo status
-export async function updateStatus(id: number, status: TodoStatus): Promise<Todo> {
+export async function updateStatus(id: number, status: TodoStatusEnum): Promise<Todo> {
   const res = await fetch(`/todo/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -69,7 +59,7 @@ export async function deleteTodoById(id: number): Promise<void> {
 }
 
 //delete all
-export async function deleteTodos(type: "Active"|"Completed"|"All"): Promise<void> {
+export async function deleteTodos(type: TodoStatusEnum): Promise<void> {
   const res = await fetch(`/delete-todos?type=${type}`, {
     method: "DELETE",
   });
