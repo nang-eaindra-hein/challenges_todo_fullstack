@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
 
 from litestar import Litestar, post, get, patch, delete
-
+from litestar.exceptions import NotFoundException, HTTPException
+from advanced_alchemy.exceptions import NotFoundError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import Todos
@@ -38,18 +39,17 @@ async def lifespan(app: Litestar):
 # get lists and count
 @get("/todos")
 async def get_todos(todo_repo: TodoRepository, type: str | None) -> TodoLists:
+    statement = select(Todos).order_by(Todos.id.asc())
 
     if type == TodoStatusEnum.ACTIVE:
-        lists_statement = await todo_repo.list(
-            statement=select(Todos).where(Todos.status == TodoStatusEnum.ACTIVE)
-        )
-        # active lists(false)
+        statement = select(Todos).where(
+            Todos.status == TodoStatusEnum.ACTIVE
+        )  # active lists(false)
     elif type == TodoStatusEnum.COMPLETED:
-        lists_statement = await todo_repo.list(
-            statement=select(Todos).where(Todos.status == TodoStatusEnum.COMPLETED)
+        statement = select(Todos).where(
+            Todos.status == TodoStatusEnum.COMPLETED
         )  # completed lists(true)
-    else:
-        lists_statement = await todo_repo.list()  # all lists
+    lists_statement = await todo_repo.list(statement=statement)  # all lists
 
     # count
     count_statement = len(lists_statement)
@@ -67,7 +67,13 @@ async def create_todo(
     todo_repo: TodoRepository,
     data: TodoCreate,
 ) -> TodoData:
+    existing_todo = await todo_repo.get_by_title(data.title)
 
+    if existing_todo:
+        raise HTTPException(
+            status_code=409,
+            detail="A todo with this title already exists",
+        )
     todo = Todos(title=data.title)
 
     todo = await todo_repo.add(todo)
@@ -82,8 +88,11 @@ async def create_todo(
 async def update_todo(
     todo_id: int, todo_repo: TodoRepository, data: UpdateTodo | None
 ) -> TodoData:
+    try:
+        todo = await todo_repo.get(todo_id)
+    except NotFoundError:
+        raise NotFoundException(detail="Todo not found")
 
-    todo = await todo_repo.get(todo_id)
     if data.title is not None:
         todo.title = data.title
     if data.status is not None:
@@ -98,6 +107,10 @@ async def update_todo(
 # delete by id
 @delete("/{todo_id:int}")
 async def delete_todo(todo_id: int, todo_repo: TodoRepository) -> None:
+    try:
+        todo = await todo_repo.get(todo_id)
+    except NotFoundError:
+        raise NotFoundException(detail="Todo not found")
 
     await todo_repo.delete(todo_id)
     await todo_repo.session.commit()

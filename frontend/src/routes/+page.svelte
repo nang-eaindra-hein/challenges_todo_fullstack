@@ -36,80 +36,43 @@
       queryClient.invalidateQueries({ queryKey: ["todos"] });
       toast.success("Successfully created a list!");
     },
+    onError: (error) => {
+      toast.error("A todo with this title already exists.");
+    },
   }));
 
   const updateStatusMutation = createMutation(() => ({
     mutationFn: ({ id, status }: { id: number; status: Todo["status"] }) =>
       updateStatus(id, status),
-    onSuccess: (updatedTodo) => {
-      queryClient.setQueryData(["todos"], (oldData) => {
-        if (!oldData) return oldData;
-
-        return {
-          ...oldData,
-          items: oldData.items.map((todo) =>
-            todo.id === updatedTodo.id ? updatedTodo : todo,
-          ),
-        };
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
     },
   }));
 
   const editTodoMutation = createMutation(() => ({
     mutationFn: ({ id, title }: { id: number; title: string }) =>
       updateTodoTitle(id, title),
-    onSuccess: (updatedTodo) => {
-      queryClient.setQueryData(["todos"], (oldData) => {
-        if (!oldData) return oldData;
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
 
-        return {
-          ...oldData,
-          items: oldData.items.map((todo) =>
-            todo.id === updatedTodo.id ? updatedTodo : todo,
-          ),
-        };
-      });
       toast.success("Successfully updated a list!");
     },
   }));
 
   const deleteTodoMutation = createMutation(() => ({
     mutationFn: deleteTodoById,
-    onSuccess: (_, deletedId) => {
-      queryClient.setQueryData(["todos"], (oldData) => {
-        if (!oldData) return oldData;
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["todos"] });
 
-        return {
-          ...oldData,
-          items: oldData.items.filter((todo) => todo.id !== deletedId),
-          count: oldData.count - 1,
-        };
-      });
-      toast.success("Deleted a list!");
+      toast.success("Successfully delete a list!");
       deleteListConfirmationModal = false;
     },
   }));
 
   const deleteTodosMutation = createMutation(() => ({
     mutationFn: deleteTodos,
-    onSuccess: (_, type) => {
-      queryClient.setQueryData(["todos"], (oldData) => {
-        if (!oldData) return oldData;
-
-        const remainingTodos = oldData.items.filter((todo) => {
-          if (type === TodoStatusEnum.Active)
-            return todo.status !== TodoStatusEnum.Active;
-          if (type === TodoStatusEnum.Completed)
-            return todo.status !== TodoStatusEnum.Completed;
-          return false;
-        });
-
-        return {
-          ...oldData,
-          items: remainingTodos,
-          count: remainingTodos.length,
-        };
-      });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["todos"] });
       toast.success("Successfully clear all lists!");
       deleteListsConfirmationModal = false;
     },
@@ -121,9 +84,9 @@
   let editingTodoId = $state<number | null>(null);
   let editedTitle = $state("");
 
-  let filter = $state<(typeof filters)[number]>(TodoStatusEnum.Active);
+  let filter = $state<(typeof filters)[number]>(TodoStatusEnum.All);
   let filteredTodos = $derived(
-    todos.filter((todo) => {
+    todos.filter((todo: any) => {
       if (filter === TodoStatusEnum.Active)
         return todo.status === TodoStatusEnum.Active;
       if (filter === TodoStatusEnum.Completed)
@@ -136,11 +99,6 @@
   function toggleDarkMode() {
     isDarkMode = !isDarkMode;
   }
-
-  // onMount(async () => {
-  //     const data = await getTodos();
-  //     todos = data.items;
-  // });
 
   async function addTodo() {
     const title = newTodo.trim();
@@ -191,7 +149,7 @@
     await deleteTodoMutation.mutateAsync(todo.id);
   }
 
-  async function deletefilterTodos() {
+  function deletefilterTodos() {
     const type =
       filter === TodoStatusEnum.Active
         ? TodoStatusEnum.Active
@@ -199,7 +157,7 @@
           ? TodoStatusEnum.Completed
           : TodoStatusEnum.All;
 
-    await deleteTodosMutation.mutateAsync(type);
+    deleteTodosMutation.mutate(type);
   }
 </script>
 
